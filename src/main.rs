@@ -1,8 +1,9 @@
-#![allow(unused)] // silence unused warnings while exploring (to comment out)
+//#![allow(unused)] // silence unused warnings while exploring (to comment out)
 
 use bevy::math::Vec3Swizzles;
 use bevy_kira_audio::prelude::*;
 use bevy_kira_audio::Audio;	
+use bevy_kira_audio::AudioSource;	
 use bevy::prelude::*;
 use bevy::sprite::collide_aabb::collide;
 use components::{
@@ -61,6 +62,12 @@ struct GameTextures {
 	enemy: Handle<Image>,
 	enemy_laser: Handle<Image>,
 	explosion: Handle<TextureAtlas>,
+	player_fire_sound: Handle<AudioSource>,
+	enemy_fire_sound: Handle<AudioSource>,
+	explosion_sound: Handle<AudioSource>,
+	player_died_sound: Handle<AudioSource>,
+	enemy_died_sound: Handle<AudioSource>,
+
 }
 
 #[derive(Resource)]
@@ -121,11 +128,7 @@ fn setup_system(
 	asset_server: Res<AssetServer>,
 	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 	mut windows: ResMut<Windows>,
-	audio: Res<Audio>,
 ) {
-
-	let music = asset_server.load("assets/sounds/pew.mp3");
-	audio.play(music);
 
 	// camera
 	commands.spawn(Camera2dBundle::default());
@@ -154,6 +157,11 @@ fn setup_system(
 		enemy: asset_server.load(ENEMY_SPRITE),
 		enemy_laser: asset_server.load(ENEMY_LASER_SPRITE),
 		explosion,
+		player_fire_sound: asset_server.load("sounds/ben-bang.mp3"),
+		enemy_fire_sound: asset_server.load("sounds/pew.mp3"),
+		explosion_sound: asset_server.load("sounds/explosion.mp3"),
+		player_died_sound: asset_server.load("sounds/player_died.mp3"),
+		enemy_died_sound: asset_server.load("sounds/enemy_died.mp3"),
 	};
 	commands.insert_resource(game_textures);
 	commands.insert_resource(EnemyCount(0));
@@ -188,6 +196,9 @@ fn player_laser_hit_enemy_system(
 	mut enemy_count: ResMut<EnemyCount>,
 	laser_query: Query<(Entity, &Transform, &SpriteSize), (With<Laser>, With<FromPlayer>)>,
 	enemy_query: Query<(Entity, &Transform, &SpriteSize), With<Enemy>>,
+	game_textures: Res<GameTextures>,
+	audio: Res<Audio>,
+
 ) {
 	let mut despawned_entities: HashSet<Entity> = HashSet::new();
 
@@ -230,6 +241,8 @@ fn player_laser_hit_enemy_system(
 
 				// spawn the explosionToSpawn
 				commands.spawn(ExplosionToSpawn(enemy_tf.translation.clone()));
+
+				audio.play(game_textures.enemy_died_sound.clone());
 			}
 		}
 	}
@@ -241,6 +254,8 @@ fn enemy_laser_hit_player_system(
 	time: Res<Time>,
 	laser_query: Query<(Entity, &Transform, &SpriteSize), (With<Laser>, With<FromEnemy>)>,
 	player_query: Query<(Entity, &Transform, &SpriteSize), With<Player>>,
+	game_textures: Res<GameTextures>,
+	audio: Res<Audio>,
 ) {
 	if let Ok((player_entity, player_tf, player_size)) = player_query.get_single() {
 		let player_scale = Vec2::from(player_tf.scale.xy());
@@ -268,6 +283,8 @@ fn enemy_laser_hit_player_system(
 				// spawn the explosionToSpawn
 				commands.spawn(ExplosionToSpawn(player_tf.translation.clone()));
 
+				audio.play(game_textures.player_died_sound.clone());
+
 				break;
 			}
 		}
@@ -278,6 +295,7 @@ fn explosion_to_spawn_system(
 	mut commands: Commands,
 	game_textures: Res<GameTextures>,
 	query: Query<(Entity, &ExplosionToSpawn)>,
+	audio: Res<Audio>,
 ) {
 	for (explosion_spawn_entity, explosion_to_spawn) in query.iter() {
 		// spawn the explosion sprite
@@ -292,6 +310,10 @@ fn explosion_to_spawn_system(
 			})
 			.insert(Explosion)
 			.insert(ExplosionTimer::default());
+
+		audio
+			.play(game_textures.explosion_sound.clone())
+			.with_volume(0.1);
 
 		// despawn the explosionToSpawn
 		commands.entity(explosion_spawn_entity).despawn();

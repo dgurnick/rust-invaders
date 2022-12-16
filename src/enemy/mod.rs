@@ -6,6 +6,8 @@ use crate::{
 };
 use bevy::ecs::schedule::ShouldRun;
 use bevy::prelude::*;
+use bevy_kira_audio::prelude::*;
+use bevy_kira_audio::Audio;	
 use bevy::time::FixedTimestep;
 use rand::{thread_rng, Rng};
 use std::f32::consts::PI;
@@ -73,6 +75,7 @@ fn enemy_fire_system(
 	mut commands: Commands,
 	game_textures: Res<GameTextures>,
 	enemy_query: Query<&Transform, With<Enemy>>,
+	audio: Res<Audio>,
 ) {
 	for &tf in enemy_query.iter() {
 		let (x, y) = (tf.translation.x, tf.translation.y);
@@ -93,6 +96,8 @@ fn enemy_fire_system(
 			.insert(FromEnemy)
 			.insert(Movable { auto_despawn: true })
 			.insert(Velocity { x: 0., y: -1. });
+
+		audio.play(game_textures.enemy_fire_sound.clone());
 	}
 }
 

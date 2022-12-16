@@ -5,6 +5,8 @@ use crate::{
 };
 use bevy::prelude::*;
 use bevy::time::FixedTimestep;
+use bevy_kira_audio::prelude::*;
+use bevy_kira_audio::Audio;	
 
 pub struct PlayerPlugin;
 
@@ -62,9 +64,12 @@ fn player_fire_system(
 	kb: Res<Input<KeyCode>>,
 	game_textures: Res<GameTextures>,
 	query: Query<&Transform, With<Player>>,
+	audio: Res<Audio>,
 ) {
 	if let Ok(player_tf) = query.get_single() {
-		if kb.just_pressed(KeyCode::Space) {
+		if kb.just_pressed(KeyCode::Space) 
+			||  kb.just_pressed(KeyCode::Up) 
+		{
 			let (x, y) = (player_tf.translation.x, player_tf.translation.y);
 			let x_offset = PLAYER_SIZE.0 / 2. * SPRITE_SCALE - 5.;
 
@@ -88,6 +93,9 @@ fn player_fire_system(
 
 			spawn_laser(x_offset);
 			spawn_laser(-x_offset);
+
+			audio.play(game_textures.player_fire_sound.clone());
+			
 		}
 	}
 }
