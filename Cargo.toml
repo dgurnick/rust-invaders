@@ -19,7 +19,15 @@ bevy = { version = "0.9", default-features = false, features = [
     "filesystem_watcher",
 ] }
 rand = "0.8"
-bevy_kira_audio = { version = "0.13" }
+
+[dependencies.bevy_kira_audio]
+version = "0.13"
+# `ogg` format support is enabled by default, disable if you don't want it
+default-features = false
+# enable the features you care about
+features = [
+  "mp3",
+]
 
 [workspace]
 resolver = "2" # Important! wgpu/Bevy needs this!
