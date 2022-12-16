@@ -1,6 +1,8 @@
 #![allow(unused)] // silence unused warnings while exploring (to comment out)
 
 use bevy::math::Vec3Swizzles;
+use bevy_kira_audio::prelude::*;
+use bevy_kira_audio::Audio;	
 use bevy::prelude::*;
 use bevy::sprite::collide_aabb::collide;
 use components::{
@@ -102,6 +104,7 @@ fn main() {
 			},
 			..Default::default()
 		}))
+		.add_plugin(AudioPlugin)
 		.add_plugin(PlayerPlugin)
 		.add_plugin(EnemyPlugin)
 		.add_startup_system(setup_system)
@@ -118,7 +121,12 @@ fn setup_system(
 	asset_server: Res<AssetServer>,
 	mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 	mut windows: ResMut<Windows>,
+	audio: Res<Audio>,
 ) {
+
+	let music = asset_server.load("assets/sounds/pew.mp3");
+	audio.play(music);
+
 	// camera
 	commands.spawn(Camera2dBundle::default());
 
